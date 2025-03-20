@@ -46,7 +46,7 @@ fn main() {
     let base_url = "https://nvda.zip";
     let json_url = format!("{}/{}.json", base_url, endpoint.to_string().to_lowercase());
     let client = Client::new();
-    if cli.endpoint.is_none() || !cli.url {
+    if (cli.endpoint.is_none() && !cli.url) || !cli.url {
         match get_download_url(&client, &json_url) {
             Some(download_url) => {
                 if let Err(e) = download_and_prompt(&client, &download_url) {
