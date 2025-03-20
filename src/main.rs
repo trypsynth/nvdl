@@ -46,7 +46,7 @@ fn main() {
     let base_url = "https://nvda.zip";
     let json_url = format!("{}/{}.json", base_url, endpoint.to_string().to_lowercase());
     let client = Client::new();
-    if (cli.endpoint.is_none() && !cli.url) || !cli.url {
+    if !cli.url {
         match get_download_url(&client, &json_url) {
             Some(download_url) => {
                 if let Err(e) = download_and_prompt(&client, &download_url) {
@@ -97,11 +97,9 @@ fn download_and_prompt(client: &Client, url: &str) -> Result<(), Box<dyn Error>>
     copy(&mut content.as_ref(), &mut file)?;
     drop(file);
     println!("Downloaded {} to the current directory.", filename);
-    if cfg!(target_os = "windows") {
-        if inquire_yes_no("Installer downloaded. Run now?", true) {
-            println!("Running installer...");
-            Command::new(filename).spawn()?.wait()?;
-        }
+    if cfg!(target_os = "windows") && inquire_yes_no("Installer downloaded. Run now?", true) {
+        println!("Running installer...");
+        Command::new(filename).spawn()?.wait()?;
     }
     Ok(())
 }
