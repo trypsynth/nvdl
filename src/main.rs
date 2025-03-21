@@ -17,10 +17,10 @@ use std::{
     about = "Download or retrieve NVDA versions from the nvda.zip API"
 )]
 struct Cli {
-    /// The NVDA version to retrieve (default: stable). If no argument is provided, downloads the stable version.
-    #[arg(value_enum)]
-    endpoint: Option<Endpoint>,
-    /// Display the installer's direct download link rather than fetching the installer itself.
+    /// The NVDA version to retrieve (default: stable).
+    #[arg(value_enum, default_value_t = Endpoint::Stable)]
+    endpoint: Endpoint,
+    /// Display the installer's direct download link rather than downloading it.
     #[arg(short, long)]
     url: bool,
 }
@@ -36,17 +36,20 @@ enum Endpoint {
 
 impl Display for Endpoint {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{}", format!("{:?}", self).to_lowercase())
     }
 }
 
 fn main() {
     let cli = Cli::parse();
-    let endpoint = cli.endpoint.as_ref().unwrap_or(&Endpoint::Stable);
     let base_url = "https://nvda.zip";
-    let json_url = format!("{}/{}.json", base_url, endpoint.to_string().to_lowercase());
+    let json_url = format!("{}/{}.json", base_url, cli.endpoint);
     let client = Client::new();
-    if !cli.url {
+    if cli.url {
+        if let Err(e) = print_download_url(&client, &json_url) {
+            eprintln!("Error: {}", e);
+        }
+    } else {
         match get_download_url(&client, &json_url) {
             Some(download_url) => {
                 if let Err(e) = download_and_prompt(&client, &download_url) {
@@ -55,37 +58,29 @@ fn main() {
             }
             None => eprintln!("Failed to retrieve download URL."),
         }
+    }
+}
+
+fn print_download_url(client: &Client, json_url: &str) -> Result<(), Box<dyn Error>> {
+    let json: Value = client.get(json_url).send()?.json()?;
+    if let Some(url) = json.get("url").and_then(|v| v.as_str()) {
+        println!("{}", url);
+        Ok(())
     } else {
-        match client.get(&json_url).send() {
-            Ok(response) => {
-                if let Ok(json) = response.json::<Value>() {
-                    if let Some(url) = json.get("url").and_then(|v| v.as_str()) {
-                        println!("{}", url);
-                    } else {
-                        eprintln!("Invalid JSON response: missing 'url' field.");
-                    }
-                } else {
-                    eprintln!("Failed to parse JSON response.");
-                }
-            }
-            Err(e) => eprintln!("Request failed: {}", e),
-        }
+        Err("Invalid JSON response: missing 'url' field.".into())
     }
 }
 
 fn get_download_url(client: &Client, json_url: &str) -> Option<String> {
-    match client.get(json_url).send() {
-        Ok(response) => {
-            if let Ok(json) = response.json::<Value>() {
-                json.get("url")
-                    .and_then(|v| v.as_str())
-                    .map(|s| s.to_string())
-            } else {
-                None
-            }
-        }
-        Err(_) => None,
-    }
+    client
+        .get(json_url)
+        .send()
+        .ok()?
+        .json::<Value>()
+        .ok()?
+        .get("url")?
+        .as_str()
+        .map(str::to_string)
 }
 
 fn download_and_prompt(client: &Client, url: &str) -> Result<(), Box<dyn Error>> {
@@ -95,7 +90,6 @@ fn download_and_prompt(client: &Client, url: &str) -> Result<(), Box<dyn Error>>
     let filename = url.split('/').last().unwrap_or("nvda_installer.exe");
     let mut file = File::create(filename)?;
     copy(&mut content.as_ref(), &mut file)?;
-    drop(file);
     println!("Downloaded {} to the current directory.", filename);
     if cfg!(target_os = "windows") && inquire_yes_no("Installer downloaded. Run now?", true) {
         println!("Running installer...");
