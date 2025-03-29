@@ -2,7 +2,9 @@
 name = "nvdl"
 version = "0.1.0"
 edition = "2024"
-license = "zlib"
+authors = ["Quin Gillespie <trypsynth@gmail.com>"]
+description = "Retrieve a direct download link or download the NVDA screen reader."
+license = "Zlib"
 repository = "https://github.com/trypsynth/nvdl"
 
 [dependencies]

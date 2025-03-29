@@ -11,11 +11,7 @@ use std::{
 };
 
 #[derive(Parser)]
-#[command(
-    name = "nvdl",
-    version,
-    about = "Retrieve a direct download link or download the NVDA screen reader."
-)]
+#[command(name = "nvdl", version, about)]
 struct Cli {
     /// The NVDA version to retrieve (default: stable).
     #[arg(value_enum, default_value_t = Endpoint::Stable)]
