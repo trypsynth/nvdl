@@ -6,6 +6,7 @@ use std::{
     error::Error,
     fmt::{self, Display, Formatter},
     fs::File,
+    io::Write,
     process::Command,
 };
 
@@ -35,79 +36,66 @@ enum Endpoint {
 
 impl Display for Endpoint {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{}", format!("{:?}", self).to_lowercase())
+        write!(f, "{:?}", self)
     }
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
-    let version_type = match cli.endpoint {
-        Endpoint::Stable => VersionType::Stable,
-        Endpoint::Alpha => VersionType::Alpha,
-        Endpoint::Beta => VersionType::Beta,
-        Endpoint::Xp => {
-            if cli.url {
-                println!("{}", XP_URL);
-            } else {
-                if let Err(e) = download_and_prompt(XP_URL).await {
-                    eprintln!("Error: {}", e);
-                }
-            }
-            return;
-        }
-        Endpoint::Win7 => {
-            if cli.url {
-                println!("{}", WIN7_URL);
-            } else {
-                if let Err(e) = download_and_prompt(WIN7_URL).await {
-                    eprintln!("Error: {}", e);
-                }
-            }
-            return;
-        }
-    };
     let nvda_url = NvdaUrl::default();
-    if cli.url {
-        if let Err(e) = print_download_url(&nvda_url, version_type).await {
-            eprintln!("Error: {}", e);
-        }
-    } else {
-        match get_download_url(&nvda_url, version_type).await {
-            Some(download_url) => {
-                if let Err(e) = download_and_prompt(&download_url).await {
-                    eprintln!("Error: {}", e);
-                }
+    match cli.endpoint {
+        Endpoint::Xp => handle_fixed_url(XP_URL, cli.url).await?,
+        Endpoint::Win7 => handle_fixed_url(WIN7_URL, cli.url).await?,
+        _ => {
+            let version_type = match cli.endpoint {
+                Endpoint::Stable => VersionType::Stable,
+                Endpoint::Alpha => VersionType::Alpha,
+                Endpoint::Beta => VersionType::Beta,
+                _ => unreachable!(),
+            };
+            if cli.url {
+                print_download_url(&nvda_url, version_type).await?;
+            } else {
+                let url = nvda_url
+                    .get_url(version_type)
+                    .await
+                    .ok_or("Failed to retrieve download URL.")?;
+                download_and_prompt(&url).await?;
             }
-            None => eprintln!("Failed to retrieve download URL."),
         }
     }
+    Ok(())
+}
+
+async fn handle_fixed_url(url: &str, url_only: bool) -> Result<(), Box<dyn Error>> {
+    if url_only {
+        println!("{}", url);
+    } else {
+        download_and_prompt(url).await?;
+    }
+    Ok(())
 }
 
 async fn print_download_url(
     nvda_url: &NvdaUrl,
     version_type: VersionType,
 ) -> Result<(), Box<dyn Error>> {
-    if let Some(url) = nvda_url.get_url(version_type).await {
-        println!("{}", url);
-        Ok(())
-    } else {
-        Err("Failed to fetch the download URL.".into())
-    }
-}
-
-async fn get_download_url(nvda_url: &NvdaUrl, version_type: VersionType) -> Option<String> {
-    nvda_url.get_url(version_type).await
+    let url = nvda_url
+        .get_url(version_type)
+        .await
+        .ok_or("Failed to fetch the download URL.")?;
+    println!("{}", url);
+    Ok(())
 }
 
 async fn download_and_prompt(url: &str) -> Result<(), Box<dyn Error>> {
     println!("Downloading...");
-    let client = Client::new();
-    let response = client.get(url).send().await?;
+    let response = Client::new().get(url).send().await?.error_for_status()?;
     let content = response.bytes().await?;
     let filename = url.split('/').last().unwrap_or("nvda_installer.exe");
     let mut file = File::create(filename)?;
-    std::io::copy(&mut content.as_ref(), &mut file)?;
+    file.write_all(&content)?;
     println!("Downloaded {} to the current directory.", filename);
     if cfg!(target_os = "windows") && inquire_yes_no("Installer downloaded. Run now?", true) {
         println!("Running installer...");
