@@ -13,7 +13,7 @@ use std::{
 #[command(
     name = "nvdl",
     version,
-    about = "Download or retrieve the NVDA screen reader"
+    about = "Retrieve a direct download link or download the NVDA screen reader."
 )]
 struct Cli {
     /// The NVDA version to retrieve (default: stable).
@@ -67,9 +67,7 @@ async fn main() {
             return;
         }
     };
-
     let nvda_url = NvdaUrl::default();
-
     if cli.url {
         if let Err(e) = print_download_url(&nvda_url, version_type).await {
             eprintln!("Error: {}", e);
