@@ -13,11 +13,8 @@ readme = "README.md"
 [dependencies]
 clap = { version = "4.5.32", features = ["derive"] }
 dialoguer = "0.11.0"
-indicatif = "0.17.11"
 nvda_url = "0.1.0"
 reqwest = { version = "0.12.15", default-features = false, features = ["blocking", "json", "rustls-tls-webpki-roots"] }
-serde = "1.0.219"
-serde_json = "1.0.140"
 tokio = { version = "1.44.1", features = ["full"] }
 
 [profile.release]

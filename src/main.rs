@@ -3,6 +3,7 @@
 //! This tool allows users to download the latest NVDA versions or retrieve
 //! direct download links for specific versions (stable, alpha, beta, XP, Win7).
 
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 use clap::{Parser, ValueEnum};
 use dialoguer::Confirm;
 use nvda_url::{NvdaUrl, VersionType, WIN7_URL, XP_URL};
