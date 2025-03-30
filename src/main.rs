@@ -1,3 +1,8 @@
+//! `nvdl` - A CLI tool for downloading and retrieving NVDA screen reader versions.
+//!
+//! This tool allows users to download the latest NVDA versions or retrieve
+//! direct download links for specific versions (stable, alpha, beta, XP, Win7).
+
 use clap::{Parser, ValueEnum};
 use dialoguer::Confirm;
 use nvda_url::{NvdaUrl, VersionType, WIN7_URL, XP_URL};
@@ -10,6 +15,7 @@ use std::{
     process::Command,
 };
 
+/// Definse the command-line interface for `nvdl`.
 #[derive(Parser)]
 #[command(name = "nvdl", version, about)]
 struct Cli {
@@ -21,12 +27,18 @@ struct Cli {
     url: bool,
 }
 
+/// Defines the available NVDA version types that can be retrieved.
 #[derive(ValueEnum, Clone, Debug)]
 enum Endpoint {
+    /// Stable release version.
     Stable,
+    /// Snapshot alpha version.
     Alpha,
+    /// Beta release version.
     Beta,
+    /// The last version compatible with Windows XP.
     Xp,
+    /// The last version compatible with Windows 7.
     Win7,
 }
 
@@ -100,6 +112,7 @@ async fn download_and_prompt(url: &str) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+/// Prompts the user with a yes/no prompt in the terminal. Returns false on error.
 fn confirm(prompt: &str, default_val: bool) -> bool {
     Confirm::new()
         .with_prompt(prompt)
