@@ -9,7 +9,6 @@ use nvda_url::{NvdaUrl, VersionType, WIN7_URL, XP_URL};
 use reqwest::Client;
 use std::{
     error::Error,
-    fmt::{self, Display, Formatter},
     fs::File,
     io::Write,
     process::Command,
@@ -42,12 +41,7 @@ enum Endpoint {
     Win7,
 }
 
-impl Display for Endpoint {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
+/// Main entrypoint for the `nvdl` application.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
@@ -76,6 +70,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+/// Handles either downloading or printing a fixed URL (e.g. Windows XP / Windows 7).
 async fn handle_fixed_url(url: &str, url_only: bool) -> Result<(), Box<dyn Error>> {
     if url_only {
         println!("{}", url);
