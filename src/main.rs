@@ -1,5 +1,5 @@
 use clap::{Parser, ValueEnum};
-use inquire::Confirm;
+use dialoguer::Confirm;
 use nvda_url::{NvdaUrl, VersionType, WIN7_URL, XP_URL};
 use reqwest::Client;
 use std::{
@@ -93,17 +93,18 @@ async fn download_and_prompt(url: &str) -> Result<(), Box<dyn Error>> {
     let mut file = File::create(filename)?;
     file.write_all(&content)?;
     println!("Downloaded {} to the current directory.", filename);
-    if cfg!(target_os = "windows") && inquire_yes_no("Installer downloaded. Run now?", true) {
+    if cfg!(target_os = "windows") && confirm("Installer downloaded. Run now?", true) {
         println!("Running installer...");
         Command::new(filename).spawn()?.wait()?;
     }
     Ok(())
 }
 
-fn inquire_yes_no(prompt: &str, default_val: bool) -> bool {
-    Confirm::new(prompt)
-        .with_default(default_val)
-        .with_placeholder("y")
-        .prompt()
+fn confirm(prompt: &str, default_val: bool) -> bool {
+    Confirm::new()
+        .with_prompt(prompt)
+        .report(false)
+        .default(default_val)
+        .interact()
         .unwrap_or(false)
 }

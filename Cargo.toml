@@ -1,14 +1,19 @@
 [package]
 name = "nvdl"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 authors = ["Quin Gillespie <trypsynth@gmail.com>"]
+categories = ["accessibility", "command-line-utilities", "web-programming::http-client"]
 description = "Retrieve a direct download link or download the NVDA screen reader."
+keywords = ["cli", "nvda", "downloader", "nvda_url"]
 license = "Zlib"
 repository = "https://github.com/trypsynth/nvdl"
+readme = "README.md"
 
 [dependencies]
 clap = { version = "4.5.32", features = ["derive"] }
+dialoguer = "0.11.0"
+indicatif = "0.17.11"
 nvda_url = "0.1.0"
 reqwest = { version = "0.12.15", default-features = false, features = ["blocking", "json", "rustls-tls-webpki-roots"] }
 serde = "1.0.219"
@@ -21,6 +26,3 @@ opt-level = "z"
 lto = true
 panic = "abort"
 codegen-units = 1
-
-[target.'cfg(windows)'.dependencies]
-inquire = "0.7.5"
