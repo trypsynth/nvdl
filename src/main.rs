@@ -8,14 +8,9 @@ use clap::{Parser, ValueEnum};
 use dialoguer::Confirm;
 use nvda_url::{NvdaUrl, VersionType, WIN7_URL, XP_URL};
 use reqwest::Client;
-use std::{
-    error::Error,
-    fs::File,
-    io::Write,
-    process::Command,
-};
+use std::{error::Error, fs::File, io::Write, process::Command};
 
-/// Definse the command-line interface for `nvdl`.
+/// Defines the command-line interface for `nvdl`.
 #[derive(Parser)]
 #[command(name = "nvdl", version, about)]
 struct Cli {
@@ -99,7 +94,7 @@ async fn download_and_prompt(url: &str) -> Result<(), Box<dyn Error>> {
     println!("Downloading...");
     let response = Client::new().get(url).send().await?.error_for_status()?;
     let content = response.bytes().await?;
-    let filename = url.split('/').last().unwrap_or("nvda_installer.exe");
+    let filename = url.rsplit('/').next().unwrap_or("nvda_installer.exe");
     let mut file = File::create(filename)?;
     file.write_all(&content)?;
     println!("Downloaded {filename} to the current directory.");
