@@ -77,6 +77,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.98"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e16d2d3311acee920a9eb8d33b8cbc1787ce4a264e85f964c2404b969bdcd487"
+
+[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -718,9 +724,9 @@ dependencies = [
 
 [[package]]
 name = "nvda_url"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de0afef5cb82221e49355537dfe29b80117f03632c56d249c87d793792a97fe5"
+checksum = "7c4facffa944b702482d54a2c0f3735a34c433553b17c4d7129bc46956e12e4a"
 dependencies = [
  "regex",
  "reqwest",
@@ -731,6 +737,7 @@ dependencies = [
 name = "nvdl"
 version = "0.2.0"
 dependencies = [
+ "anyhow",
  "clap",
  "dialoguer",
  "nvda_url",
