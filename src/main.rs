@@ -39,27 +39,38 @@ enum Endpoint {
 	Win7,
 }
 
+impl Endpoint {
+	fn as_version_type(&self) -> Option<VersionType> {
+		match self {
+			Endpoint::Stable => Some(VersionType::Stable),
+			Endpoint::Alpha => Some(VersionType::Alpha),
+			Endpoint::Beta => Some(VersionType::Beta),
+			_ => None,
+		}
+	}
+
+	fn as_fixed_url(&self) -> Option<&'static str> {
+		match self {
+			Endpoint::Xp => Some(XP_URL),
+			Endpoint::Win7 => Some(WIN7_URL),
+			_ => None,
+		}
+	}
+}
+
 /// Main entrypoint for the `nvdl` application.
 #[tokio::main]
 async fn main() -> Result<()> {
 	let cli = Cli::parse();
 	let nvda_url = NvdaUrl::default();
-	match cli.endpoint {
-		Endpoint::Xp => handle_fixed_url(XP_URL, cli.url).await?,
-		Endpoint::Win7 => handle_fixed_url(WIN7_URL, cli.url).await?,
-		_ => {
-			let version_type = match cli.endpoint {
-				Endpoint::Stable => VersionType::Stable,
-				Endpoint::Alpha => VersionType::Alpha,
-				Endpoint::Beta => VersionType::Beta,
-				_ => unreachable!(),
-			};
-			if cli.url {
-				print_download_url(&nvda_url, version_type).await?;
-			} else {
-				let url = nvda_url.get_url(version_type).await.context("Failed to retrieve download URL.")?;
-				download_and_prompt(&url).await?;
-			}
+	if let Some(url) = cli.endpoint.as_fixed_url() {
+		handle_fixed_url(url, cli.url).await?;
+	} else if let Some(version_type) = cli.endpoint.as_version_type() {
+		if cli.url {
+			print_download_url(&nvda_url, version_type).await?;
+		} else {
+			let url = nvda_url.get_url(version_type).await.context("Failed to retrieve download URL.")?;
+			download_and_prompt(&url).await?;
 		}
 	}
 	Ok(())
@@ -87,7 +98,7 @@ async fn download_and_prompt(url: &str) -> Result<()> {
 	println!("Downloading...");
 	let response = Client::new().get(url).send().await?.error_for_status()?;
 	let content = response.bytes().await?;
-	let filename = url.rsplit('/').next().unwrap_or("nvda_installer.exe");
+	let filename = url.rsplit('/').next().filter(|s| !s.is_empty()).unwrap_or("nvda_installer.exe");
 	let mut file = File::create(filename)?;
 	file.write_all(&content)?;
 	println!("Downloaded {filename} to the current directory.");
