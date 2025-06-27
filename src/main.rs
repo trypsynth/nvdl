@@ -4,11 +4,13 @@
 //! direct download links for specific versions (stable, alpha, beta, XP, Win7).
 
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+
+use anyhow::{Context, Result};
 use clap::{Parser, ValueEnum};
 use dialoguer::Confirm;
 use nvda_url::{NvdaUrl, VersionType, WIN7_URL, XP_URL};
 use reqwest::Client;
-use std::{error::Error, fs::File, io::Write, process::Command};
+use std::{fs::File, io::Write, process::Command};
 
 /// Defines the command-line interface for `nvdl`.
 #[derive(Parser)]
@@ -39,7 +41,7 @@ enum Endpoint {
 
 /// Main entrypoint for the `nvdl` application.
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<()> {
 	let cli = Cli::parse();
 	let nvda_url = NvdaUrl::default();
 	match cli.endpoint {
@@ -55,7 +57,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 			if cli.url {
 				print_download_url(&nvda_url, version_type).await?;
 			} else {
-				let url = nvda_url.get_url(version_type).await.ok_or("Failed to retrieve download URL.")?;
+				let url = nvda_url.get_url(version_type).await.context("Failed to retrieve download URL.")?;
 				download_and_prompt(&url).await?;
 			}
 		}
@@ -64,7 +66,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 /// Handles either downloading or printing a fixed URL (e.g. Windows XP / Windows 7).
-async fn handle_fixed_url(url: &str, url_only: bool) -> Result<(), Box<dyn Error>> {
+async fn handle_fixed_url(url: &str, url_only: bool) -> Result<()> {
 	if url_only {
 		println!("{url}");
 	} else {
@@ -73,15 +75,15 @@ async fn handle_fixed_url(url: &str, url_only: bool) -> Result<(), Box<dyn Error
 	Ok(())
 }
 
-/// Fetches and prinst the download URL for a particular NVDA version type.
-async fn print_download_url(nvda_url: &NvdaUrl, version_type: VersionType) -> Result<(), Box<dyn Error>> {
-	let url = nvda_url.get_url(version_type).await.ok_or("Failed to fetch the download URL.")?;
+/// Fetches and prints the download URL for a particular NVDA version type.
+async fn print_download_url(nvda_url: &NvdaUrl, version_type: VersionType) -> Result<()> {
+	let url = nvda_url.get_url(version_type).await.context("Failed to fetch the download URL.")?;
 	println!("{url}");
 	Ok(())
 }
 
 /// Downloads the NVDA installer from a particular URL, and asks the user if they'd like to run it if they're on Windows.
-async fn download_and_prompt(url: &str) -> Result<(), Box<dyn Error>> {
+async fn download_and_prompt(url: &str) -> Result<()> {
 	println!("Downloading...");
 	let response = Client::new().get(url).send().await?.error_for_status()?;
 	let content = response.bytes().await?;
