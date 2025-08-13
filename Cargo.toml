@@ -11,12 +11,12 @@ repository = "https://github.com/trypsynth/nvdl"
 readme = "README.md"
 
 [dependencies]
-anyhow = "1.0.98"
-clap = { version = "4.5.40", features = ["derive"] }
+anyhow = "1.0.99"
+clap = { version = "4.5.45", features = ["derive"] }
 dialoguer = "0.11.0"
 nvda_url = "0.1.2"
-reqwest = { version = "0.12.20", default-features = false, features = ["blocking", "json", "rustls-tls-webpki-roots"] }
-tokio = { version = "1.45.1", features = ["full"] }
+reqwest = { version = "0.12.23", default-features = false, features = ["blocking", "json", "rustls-tls-webpki-roots"] }
+tokio = { version = "1.47.1", features = ["full"] }
 
 [profile.release]
 strip = true
