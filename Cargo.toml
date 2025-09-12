@@ -12,8 +12,8 @@ readme = "README.md"
 
 [dependencies]
 anyhow = "1.0.99"
-clap = { version = "4.5.45", features = ["derive"] }
-dialoguer = "0.11.0"
+clap = { version = "4.5.47", features = ["derive"] }
+dialoguer = "0.12.0"
 nvda_url = "0.1.2"
 reqwest = { version = "0.12.23", default-features = false, features = ["blocking", "json", "rustls-tls-webpki-roots"] }
 tokio = { version = "1.47.1", features = ["full"] }
