@@ -40,19 +40,19 @@ enum Endpoint {
 }
 
 impl Endpoint {
-	fn as_version_type(&self) -> Option<VersionType> {
+	const fn as_version_type(&self) -> Option<VersionType> {
 		match self {
-			Endpoint::Stable => Some(VersionType::Stable),
-			Endpoint::Alpha => Some(VersionType::Alpha),
-			Endpoint::Beta => Some(VersionType::Beta),
+			Self::Stable => Some(VersionType::Stable),
+			Self::Alpha => Some(VersionType::Alpha),
+			Self::Beta => Some(VersionType::Beta),
 			_ => None,
 		}
 	}
 
-	fn as_fixed_url(&self) -> Option<&'static str> {
+	const fn as_fixed_url(&self) -> Option<&'static str> {
 		match self {
-			Endpoint::Xp => Some(XP_URL),
-			Endpoint::Win7 => Some(WIN7_URL),
+			Self::Xp => Some(XP_URL),
+			Self::Win7 => Some(WIN7_URL),
 			_ => None,
 		}
 	}
