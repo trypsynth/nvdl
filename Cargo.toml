@@ -1,6 +1,6 @@
 [package]
 name = "nvdl"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 authors = ["Quin Gillespie <trypsynth@gmail.com>"]
 categories = ["accessibility", "command-line-utilities", "web-programming::http-client"]
