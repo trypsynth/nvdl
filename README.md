@@ -1,4 +1,4 @@
-# nvdl - NVDA Downloader CLI
+# nvdl - NVDA Downloader
 `nvdl` is a simple command-line tool that allows users to download or retrieve the latest NVDA screen reader versions from the `https://nvda.zip` API. 
 
 ## Features

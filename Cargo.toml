@@ -9,6 +9,7 @@ keywords = ["cli", "nvda", "downloader", "nvda_url"]
 license = "Zlib"
 repository = "https://github.com/trypsynth/nvdl"
 readme = "README.md"
+rust-version = "1.88.0"
 
 [dependencies]
 anyhow = "1.0.100"
