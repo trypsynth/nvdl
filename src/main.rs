@@ -10,7 +10,7 @@ use clap::{Parser, ValueEnum};
 use dialoguer::Confirm;
 use nvda_url::{NvdaUrl, VersionType, WIN7_URL, XP_URL};
 use reqwest::Client;
-use std::{fs::File, io::Write, process::Command};
+use std::{env::current_dir, fs::File, io::Write, process::Command};
 
 /// Defines the command-line interface for `nvdl`.
 #[derive(Parser)]
@@ -101,10 +101,12 @@ async fn download_and_prompt(url: &str) -> Result<()> {
 	let filename = url.rsplit('/').next().filter(|s| !s.is_empty()).unwrap_or("nvda_installer.exe");
 	let mut file = File::create(filename)?;
 	file.write_all(&content)?;
+	file.sync_data()?;
+	drop(file);
 	println!("Downloaded {filename} to the current directory.");
 	if cfg!(target_os = "windows") && confirm("Installer downloaded. Run now?", true) {
 		println!("Running installer...");
-		Command::new(filename).spawn()?.wait()?;
+		Command::new(current_dir()?.join(filename)).spawn()?.wait()?;
 	}
 	Ok(())
 }
