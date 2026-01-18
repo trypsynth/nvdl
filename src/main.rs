@@ -50,7 +50,7 @@ impl Endpoint {
 		}
 	}
 
-	const fn as_fixed_url(&self) -> Option<(&'static str, &'static str)> {
+	const fn as_fixed_version(&self) -> Option<(&'static str, &'static str)> {
 		match self {
 			Self::Xp => Some((XP_URL, XP_HASH)),
 			Self::Win7 => Some((WIN7_URL, WIN7_HASH)),
@@ -64,33 +64,22 @@ impl Endpoint {
 async fn main() -> Result<()> {
 	let cli = Cli::parse();
 	let nvda_url = NvdaUrl::default();
-	if let Some((url, hash)) = cli.endpoint.as_fixed_url() {
-		handle_fixed_version(url, hash, cli.url).await?;
+	if let Some((url, hash)) = cli.endpoint.as_fixed_version() {
+		handle_metadata(url, hash, cli.url).await?;
 	} else if let Some(version_type) = cli.endpoint.as_version_type() {
-		if cli.url {
-			print_download_url(&nvda_url, version_type).await?;
-		} else {
-			let (url, hash) = nvda_url.get_details(version_type).await.context("Failed to retrieve download URL.")?;
-			download_and_prompt(&url, &hash).await?;
-		}
+		let (url, hash) = nvda_url.get_details(version_type).await.context("Failed to retrieve download URL.")?;
+		handle_metadata(&url, &hash, cli.url).await?;
 	}
 	Ok(())
 }
 
-/// Handles either downloading or printing a fixed URL (e.g. Windows XP / Windows 7).
-async fn handle_fixed_version(url: &str, hash: &str, url_only: bool) -> Result<()> {
+/// Handles either downloading NVDA or printing the download URL.
+async fn handle_metadata(url: &str, hash: &str, url_only: bool) -> Result<()> {
 	if url_only {
 		println!("{url}");
 	} else {
 		download_and_prompt(url, hash).await?;
 	}
-	Ok(())
-}
-
-/// Fetches and prints the download URL for a particular NVDA version type.
-async fn print_download_url(nvda_url: &NvdaUrl, version_type: VersionType) -> Result<()> {
-	let (url, _) = nvda_url.get_details(version_type).await.context("Failed to fetch the download URL.")?;
-	println!("{url}");
 	Ok(())
 }
 
