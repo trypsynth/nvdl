@@ -822,6 +822,8 @@ dependencies = [
 [[package]]
 name = "nvda_url"
 version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fdef635ca7bd8a534403de3ec5b5d2b16dd55507902a68ee93c9825bfae5c0e3"
 dependencies = [
  "reqwest",
  "tokio",
