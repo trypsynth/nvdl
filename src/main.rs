@@ -23,6 +23,9 @@ struct Cli {
 	/// Display the installer's direct download link rather than downloading it.
 	#[arg(short, long)]
 	url: bool,
+	/// Display the installer's hash rather than downloading it.
+	#[arg(short, long)]
+	checksum: bool,
 }
 
 /// Defines the available NVDA version types that can be retrieved.
@@ -65,18 +68,22 @@ async fn main() -> Result<()> {
 	let cli = Cli::parse();
 	let nvda_url = NvdaUrl::default();
 	if let Some((url, hash)) = cli.endpoint.as_fixed_version() {
-		handle_metadata(url, hash, cli.url).await?;
+		handle_metadata(url, hash, cli.url, cli.checksum).await?;
 	} else if let Some(version_type) = cli.endpoint.as_version_type() {
 		let (url, hash) = nvda_url.get_details(version_type).await.context("Failed to retrieve download URL.")?;
-		handle_metadata(&url, &hash, cli.url).await?;
+		handle_metadata(&url, &hash, cli.url, cli.checksum).await?;
 	}
 	Ok(())
 }
 
-/// Handles either downloading NVDA or printing the download URL.
-async fn handle_metadata(url: &str, hash: &str, url_only: bool) -> Result<()> {
-	if url_only {
+/// Handles either downloading NVDA or printing the download URL and/or hash.
+async fn handle_metadata(url: &str, hash: &str, print_url: bool, print_hash: bool) -> Result<()> {
+	if print_url && print_hash {
+		println!("{url} ({hash})");
+	} else if print_url {
 		println!("{url}");
+	} else if print_hash {
+		println!("{hash}");
 	} else {
 		download_and_prompt(url, hash).await?;
 	}
