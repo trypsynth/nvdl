@@ -8,11 +8,10 @@
 use anyhow::{Context, Result};
 use clap::{Parser, ValueEnum};
 use dialoguer::Confirm;
-use nvda_url::{NvdaUrl, VersionType, WIN7_URL, XP_URL, WIN7_HASH, XP_HASH};
+use nvda_url::{NvdaUrl, VersionType, WIN7_HASH, WIN7_URL, XP_HASH, XP_URL};
 use reqwest::Client;
+use sha1::{Digest, Sha1};
 use std::{env::current_dir, fs::File, io::Write, process::Command};
-use base16ct;
-use sha1::{Sha1, Digest};
 
 /// Defines the command-line interface for `nvdl`.
 #[derive(Parser)]
@@ -97,24 +96,23 @@ async fn print_download_url(nvda_url: &NvdaUrl, version_type: VersionType) -> Re
 
 /// Downloads the NVDA installer from a particular URL, and asks the user if they'd like to run it if they're on Windows.
 async fn download_and_prompt(url: &str, hash: &str) -> Result<()> {
-	let compare_hashes: bool;
 	let mut expected_hash = [0u8; 20];
-	match base16ct::mixed::decode(&hash, &mut expected_hash) {
-		Err(_) => { if !confirm("The server returned an invalid hash. Download anyway?", false) {
-			return Ok(())
-		};
-		compare_hashes = false;
-		},
-		Ok(_) => compare_hashes=true,
+	let compare_hashes = match base16ct::mixed::decode(hash, &mut expected_hash) {
+		Err(_) => {
+			if !confirm("The server returned an invalid hash. Download anyway?", false) {
+				return Ok(());
+			}
+			false
+		}
+		Ok(_) => true,
 	};
 	println!("Downloading...");
 	let response = Client::new().get(url).send().await?.error_for_status()?;
 	let content = response.bytes().await?;
 	let actual_hash = Sha1::digest(&content);
-	if compare_hashes && actual_hash.as_slice() != expected_hash {
-		if !confirm("Hashes do not match. Save anyway?", false) {
-			return Ok(())
-		}
+	if compare_hashes && actual_hash.as_slice() != expected_hash && !confirm("Hashes do not match. Save anyway?", false)
+	{
+		return Ok(());
 	}
 	let filename = url.rsplit('/').next().filter(|s| !s.is_empty()).unwrap_or("nvda_installer.exe");
 	let mut file = File::create(filename)?;

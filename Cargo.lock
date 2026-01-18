@@ -821,7 +821,7 @@ dependencies = [
 
 [[package]]
 name = "nvda_url"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "reqwest",
  "tokio",
