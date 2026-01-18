@@ -8,9 +8,11 @@
 use anyhow::{Context, Result};
 use clap::{Parser, ValueEnum};
 use dialoguer::Confirm;
-use nvda_url::{NvdaUrl, VersionType, WIN7_URL, XP_URL};
+use nvda_url::{NvdaUrl, VersionType, WIN7_URL, XP_URL, WIN7_HASH, XP_HASH};
 use reqwest::Client;
 use std::{env::current_dir, fs::File, io::Write, process::Command};
+use base16ct;
+use sha1::{Sha1, Digest};
 
 /// Defines the command-line interface for `nvdl`.
 #[derive(Parser)]
@@ -49,10 +51,10 @@ impl Endpoint {
 		}
 	}
 
-	const fn as_fixed_url(&self) -> Option<&'static str> {
+	const fn as_fixed_url(&self) -> Option<(&'static str, &'static str)> {
 		match self {
-			Self::Xp => Some(XP_URL),
-			Self::Win7 => Some(WIN7_URL),
+			Self::Xp => Some((XP_URL, XP_HASH)),
+			Self::Win7 => Some((WIN7_URL, WIN7_HASH)),
 			_ => None,
 		}
 	}
@@ -63,41 +65,57 @@ impl Endpoint {
 async fn main() -> Result<()> {
 	let cli = Cli::parse();
 	let nvda_url = NvdaUrl::default();
-	if let Some(url) = cli.endpoint.as_fixed_url() {
-		handle_fixed_url(url, cli.url).await?;
+	if let Some((url, hash)) = cli.endpoint.as_fixed_url() {
+		handle_fixed_version(url, hash, cli.url).await?;
 	} else if let Some(version_type) = cli.endpoint.as_version_type() {
 		if cli.url {
 			print_download_url(&nvda_url, version_type).await?;
 		} else {
-			let url = nvda_url.get_url(version_type).await.context("Failed to retrieve download URL.")?;
-			download_and_prompt(&url).await?;
+			let (url, hash) = nvda_url.get_details(version_type).await.context("Failed to retrieve download URL.")?;
+			download_and_prompt(&url, &hash).await?;
 		}
 	}
 	Ok(())
 }
 
 /// Handles either downloading or printing a fixed URL (e.g. Windows XP / Windows 7).
-async fn handle_fixed_url(url: &str, url_only: bool) -> Result<()> {
+async fn handle_fixed_version(url: &str, hash: &str, url_only: bool) -> Result<()> {
 	if url_only {
 		println!("{url}");
 	} else {
-		download_and_prompt(url).await?;
+		download_and_prompt(url, hash).await?;
 	}
 	Ok(())
 }
 
 /// Fetches and prints the download URL for a particular NVDA version type.
 async fn print_download_url(nvda_url: &NvdaUrl, version_type: VersionType) -> Result<()> {
-	let url = nvda_url.get_url(version_type).await.context("Failed to fetch the download URL.")?;
+	let (url, _) = nvda_url.get_details(version_type).await.context("Failed to fetch the download URL.")?;
 	println!("{url}");
 	Ok(())
 }
 
 /// Downloads the NVDA installer from a particular URL, and asks the user if they'd like to run it if they're on Windows.
-async fn download_and_prompt(url: &str) -> Result<()> {
+async fn download_and_prompt(url: &str, hash: &str) -> Result<()> {
+	let compare_hashes: bool;
+	let mut expected_hash = [0u8; 20];
+	match base16ct::mixed::decode(&hash, &mut expected_hash) {
+		Err(_) => { if !confirm("The server returned an invalid hash. Download anyway?", false) {
+			return Ok(())
+		};
+		compare_hashes = false;
+		},
+		Ok(_) => compare_hashes=true,
+	};
 	println!("Downloading...");
 	let response = Client::new().get(url).send().await?.error_for_status()?;
 	let content = response.bytes().await?;
+	let actual_hash = Sha1::digest(&content);
+	if compare_hashes && actual_hash.as_slice() != expected_hash {
+		if !confirm("Hashes do not match. Save anyway?", false) {
+			return Ok(())
+		}
+	}
 	let filename = url.rsplit('/').next().filter(|s| !s.is_empty()).unwrap_or("nvda_installer.exe");
 	let mut file = File::create(filename)?;
 	file.write_all(&content)?;
