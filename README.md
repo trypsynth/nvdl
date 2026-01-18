@@ -1,5 +1,5 @@
 # nvdl - NVDA Downloader
-`nvdl` is a simple command-line tool that allows users to download or retrieve the latest NVDA screen reader versions from the `https://nvda.zip` API. 
+`nvdl` is a simple command-line tool that allows users to download or retrieve the latest NVDA screen reader versions from the `https://nvda.zip` API.
 
 ## Features
 - Download the latest NVDA versions (Stable, Alpha, Beta, XP, Win7).
@@ -32,7 +32,7 @@ nvdl win7
 ```sh
 nvdl --url  # or -u
 nvdl beta --checksum  # or -c
-nvdl alpha --url--checksum  # or -uc
+nvdl alpha --url --checksum  # or -uc
 ```
 
 ### Behavior on Windows
