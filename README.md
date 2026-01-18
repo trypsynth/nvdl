@@ -3,7 +3,7 @@
 
 ## Features
 - Download the latest NVDA versions (Stable, Alpha, Beta, XP, Win7).
-- Retrieve the direct download link instead of downloading the installer.
+- Retrieve the direct download link and/or  checksum instead of downloading the installer.
 - Optionally prompt the user to run the installer after download.
 
 ## Installation
@@ -28,10 +28,11 @@ nvdl xp
 nvdl win7
 ```
 
-### Get the direct download URL instead of downloading:
+### Get the direct download URL an/or checksum instead of downloading:
 ```sh
-nvdl --url
-nvdl beta --url
+nvdl --url  # or -u
+nvdl beta --checksum  # or -c
+nvdl alpha --url--checksum  # or -uc
 ```
 
 ### Behavior on Windows
