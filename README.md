@@ -37,6 +37,7 @@ nvdl alpha --url --checksum  # or -uc
 
 ### Behavior on Windows
 - If run on Windows, `nvdl` will prompt the user to run the installer after downloading.
+- You can skip the prompt by including `-y`/`--run` or `-n`/`--no-run`. These flags have no effect on other platforms.
 
 ## API Endpoints Used
 
