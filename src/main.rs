@@ -6,7 +6,7 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 use anyhow::{Context, Result};
-use clap::{Parser, ValueEnum};
+use clap::{Args, Parser, ValueEnum};
 use dialoguer::Confirm;
 use nvda_url::{NvdaUrl, VersionType, WIN7_HASH, WIN7_URL, XP_HASH, XP_URL};
 use reqwest::Client;
@@ -26,6 +26,30 @@ struct Cli {
 	/// Display the installer's hash rather than downloading it.
 	#[arg(short, long)]
 	checksum: bool,
+	#[command(flatten)]
+	run: Run,
+}
+
+#[derive(Args)]
+#[group(multiple = false, conflicts_with_all=["url", "checksum"])]
+struct Run {
+	/// Run the installer after downloading.
+	#[arg(short = 'y', long)]
+	run: bool,
+	/// Do not run the installer after downloading.
+	#[arg(short = 'n', long)]
+	no_run: bool,
+}
+
+impl Run {
+	const fn value(self) -> Option<bool> {
+		match (self.run, self.no_run) {
+			(false, false) => None,
+			(true, false) => Some(true),
+			(false, true) => Some(false),
+			(true, true) => unreachable!(),
+		}
+	}
 }
 
 /// Defines the available NVDA version types that can be retrieved.
@@ -68,16 +92,16 @@ async fn main() -> Result<()> {
 	let cli = Cli::parse();
 	let nvda_url = NvdaUrl::default();
 	if let Some((url, hash)) = cli.endpoint.as_fixed_version() {
-		handle_metadata(url, hash, cli.url, cli.checksum).await?;
+		handle_metadata(url, hash, cli.url, cli.checksum, cli.run.value()).await?;
 	} else if let Some(version_type) = cli.endpoint.as_version_type() {
 		let (url, hash) = nvda_url.get_details(version_type).await.context("Failed to retrieve download URL.")?;
-		handle_metadata(&url, &hash, cli.url, cli.checksum).await?;
+		handle_metadata(&url, &hash, cli.url, cli.checksum, cli.run.value()).await?;
 	}
 	Ok(())
 }
 
 /// Handles either downloading NVDA or printing the download URL and/or hash.
-async fn handle_metadata(url: &str, hash: &str, print_url: bool, print_hash: bool) -> Result<()> {
+async fn handle_metadata(url: &str, hash: &str, print_url: bool, print_hash: bool, run: Option<bool>) -> Result<()> {
 	if print_url && print_hash {
 		println!("{url} ({hash})");
 	} else if print_url {
@@ -85,13 +109,13 @@ async fn handle_metadata(url: &str, hash: &str, print_url: bool, print_hash: boo
 	} else if print_hash {
 		println!("{hash}");
 	} else {
-		download_and_prompt(url, hash).await?;
+		download_and_prompt(url, hash, run).await?;
 	}
 	Ok(())
 }
 
 /// Downloads the NVDA installer from a particular URL, and asks the user if they'd like to run it if they're on Windows.
-async fn download_and_prompt(url: &str, hash: &str) -> Result<()> {
+async fn download_and_prompt(url: &str, hash: &str, run: Option<bool>) -> Result<()> {
 	let mut expected_hash = [0u8; 20];
 	let compare_hashes = match base16ct::mixed::decode(hash, &mut expected_hash) {
 		Err(_) => {
@@ -116,7 +140,7 @@ async fn download_and_prompt(url: &str, hash: &str) -> Result<()> {
 	file.sync_data()?;
 	drop(file);
 	println!("Downloaded {filename} to the current directory.");
-	if cfg!(target_os = "windows") && confirm("Installer downloaded. Run now?", true) {
+	if cfg!(target_os = "windows") && run.unwrap_or_else(|| confirm("Installer downloaded. Run now?", true)) {
 		println!("Running installer...");
 		Command::new(current_dir()?.join(filename)).spawn()?.wait()?;
 	}
