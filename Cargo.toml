@@ -17,7 +17,7 @@ clap = { version = "4.5.60", features = ["derive"] }
 dialoguer = "0.12.0"
 nvda_url = "0.1.4"
 reqwest = { version = "0.13.1", default-features = false, features = ["blocking", "json", "webpki-roots"] }
-tokio = { version = "1.49.0", features = ["full"] }
+tokio = { version = "1.50.0", features = ["full"] }
 sha1 = "0.10.6"
 base16ct = "1.0.0"
 
